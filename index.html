@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paint colour swatches, hex and RGB</title>
+<style>
+  :root { --bg:#fafafa; --card:#ffffff; --muted:#666; --border:#ddd; --accent:#2b6cb0; }
+  html,body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial; background:var(--bg); color:#111; }
+  header { padding:10px 12px; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
+  h1 { margin:0 0 6px 0; font-size:16px; }
+  .controls { display:flex; gap:6px; flex-wrap:wrap; }
+  button, label.buttonish { border:1px solid var(--border); background:#fff; padding:6px 8px; border-radius:8px; cursor:pointer; font-size:13px; }
+  button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  main { padding:10px 12px 50px 12px; }
+  .table-wrap { overflow:auto; background:var(--card); border:1px solid var(--border); border-radius:12px; }
+  table { width:100%; border-collapse:collapse; min-width:980px; }
+  thead th {
+    position:sticky; top:0; background:#f5f5f7; font-weight:600; text-align:left; font-size:12px; color:#333;
+    border-bottom:1px solid var(--border); padding:8px 6px; user-select:none;
+  }
+  thead th.dragging { opacity:.6; }
+  tbody td { border-bottom:1px solid var(--border); padding:6px; font-size:13px; vertical-align:middle; }
+  tbody tr.dragging { opacity:.5; }
+  .swatch { width:110px; height:42px; border:1px solid #c8c8c8; border-radius:8px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.03); }
+  .name-cell { display:flex; align-items:center; gap:10px; }
+  .row-actions { display:flex; gap:6px; }
+  .muted { color:var(--muted); font-size:12px; }
+  .drag { cursor:grab; user-select:none; font-size:18px; opacity:.7; }
+  input[type="text"] { width:100%; box-sizing:border-box; padding:6px 7px; border:1px solid var(--border); border-radius:6px; background:#fff; }
+  input.hex, input.rgb { font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace; }
+  input.rgb { width:130px; }
+  .row-tools { display:flex; align-items:center; gap:8px; }
+  .file-hide { display:none; }
+  .toast { position:fixed; left:50%; transform:translateX(-50%); bottom:14px; background:#111; color:#fff; padding:8px 10px; border-radius:8px; font-size:12px; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  .toast.show { opacity:.95; }
+  .mini { border:1px solid var(--border); background:#fff; padding:5px 7px; border-radius:6px; cursor:pointer; font-size:12px; }
+  .th-handle { cursor:grab; opacity:.8; margin-right:6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Paint colours table, swatches, hex and RGB</h1>
+  <div class="controls">
+    <button class="primary" id="addRowBtn">Add row</button>
+    <button id="saveBtn">Save</button>
+    <button id="resetBtn" title="Replace current list with the defaults in this file">Reset to defaults</button>
+    <button id="exportBtn">Export JSON</button>
+    <label class="buttonish" for="importFile">Import JSON</label>
+    <input id="importFile" class="file-hide" type="file" accept="application/json">
+    <span class="muted">Tip, drag the left handle to reorder rows. Drag headers to reorder columns. Everything is saved.</span>
+  </div>
+</header>
+
+<main>
+  <div class="table-wrap">
+    <table id="paintTable">
+      <thead>
+        <tr id="theadRow">
+          <!-- draggable headers, each needs a data-col key that matches tbody cell data-col -->
+          <th data-col="drag"        draggable="true" style="width:30px"><span class="th-handle">⇅</span>Row</th>
+          <th data-col="brand"       draggable="true" style="width:130px"><span class="th-handle">⇅</span>Brand</th>
+          <th data-col="nameBlock"   draggable="true" style="width:340px"><span class="th-handle">⇅</span>Name, swatch</th>
+          <th data-col="hex"         draggable="true" style="width:120px"><span class="th-handle">⇅</span>Hex</th>
+          <th data-col="rgb"         draggable="true" style="width:170px"><span class="th-handle">⇅</span>RGB</th>
+          <th data-col="actions"     draggable="true" style="width:120px"><span class="th-handle">⇅</span>Actions</th>
+          <th data-col="code"        draggable="true" style="width:170px"><span class="th-handle">⇅</span>Range or code</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <p class="muted" style="margin-top:10px">Note, some values are approximate, always test with real paint.</p>
+</main>
+
+<div id="toast" class="toast">Copied</div>
+
+<script>
+const KEY_ROWS = "paintTableDataV3";
+const KEY_COLS = "paintTableColOrderV1";
+
+const defaultRows = [
+  // Dulux Heritage Whites
+  {brand:"Dulux Heritage", name:"Indian White", code:"DHT018", hex:"#E8E8E5", rgb:"232,232,229"},
+  {brand:"Dulux Heritage", name:"Mallow White", code:"DHT085", hex:"#EAE8E5", rgb:"234,232,229"},
+  {brand:"Dulux Heritage", name:"Piano White", code:"DHT031", hex:"#F1EDE0", rgb:"241,237,224"},
+  {brand:"Dulux Heritage", name:"Marble White", code:"DHT086", hex:"#EAE9EA", rgb:"234,233,234"},
+  {brand:"Dulux Heritage", name:"Chalk White", code:"DHT004", hex:"#E6E9E9", rgb:"230,233,233"},
+  {brand:"Dulux Heritage", name:"Chiltern White", code:"40YY 73/028", hex:"#DFDCD5", rgb:"223,220,213"},
+  {brand:"Dulux Heritage", name:"Ochre White", code:"DHT025", hex:"#ECE6D8", rgb:"236,230,216"},
+  {brand:"Dulux Heritage", name:"Linen White", code:"DHT022", hex:"#EDE8E2", rgb:"237,232,226"},
+  {brand:"Dulux Heritage", name:"Romance White", code:"DHT089", hex:"#F1EEE7", rgb:"241,238,231"},
+
+  // Dulux Heritage Neutrals / Greys / Greens
+  {brand:"Dulux Heritage", name:"Stone Green", code:"DHT039", hex:"#B6B4A9", rgb:"182,180,169"},
+  {brand:"Dulux Heritage", name:"Pebble Grey", code:"1780009", hex:"#BAB3AC", rgb:"186,179,172"},
+  {brand:"Dulux Heritage", name:"Raw Cashmere", code:"40YY 60/103", hex:"#D4C9B5", rgb:"212,201,181"},
+  {brand:"Dulux Heritage", name:"Quartz Grey", code:"DHT046", hex:"#C2BEB4", rgb:"194,190,180"},
+  {brand:"Dulux Heritage", name:"Beachcomb Grey", code:"DHT062", hex:"#CFC8BD", rgb:"207,200,189"},
+  {brand:"Dulux Heritage", name:"Turtledove Grey", code:"DHT058", hex:"#D0C6B8", rgb:"208,198,184"},
+
+  // Standard Dulux
+  {brand:"Dulux (Std)", name:"Whisper White", code:"SW1C2", hex:"#EBE9E0", rgb:"235,233,224"},
+  {brand:"Dulux (Std)", name:"Frosted Dawn", code:"", hex:"#F7F6EE", rgb:"247,246,238"},
+  {brand:"Dulux (Std)", name:"Egyptian Cotton", code:"", hex:"#D8D0C2", rgb:"216,208,194"},
+
+  // Other brands
+  {brand:"Valspar", name:"Goose Feathers", code:"8006-2B", hex:"#D6D2CA", rgb:"214,210,202"},
+  {brand:"GoodHome, B&Q", name:"Cancún", code:"", hex:"#D8D2C4", rgb:"216,210,196"},
+
+  // Farrow & Ball
+  {brand:"Farrow & Ball", name:"Elephant's Breath", code:"No.229", hex:"#CDC3B7", rgb:"205,195,183"},
+  {brand:"Farrow & Ball", name:"Skimming Stone", code:"No.241", hex:"#D4CEC3", rgb:"212,206,195"},
+  {brand:"Farrow & Ball", name:"Pavilion Grey", code:"No.242", hex:"#B9B8B0", rgb:"185,184,176"},
+  {brand:"Farrow & Ball", name:"Purbeck Stone", code:"No.275", hex:"#C1BEB4", rgb:"193,190,180"},
+  {brand:"Farrow & Ball", name:"Shaded White", code:"No.201", hex:"#DDD6C5", rgb:"221,214,197"},
+  {brand:"Farrow & Ball", name:"Cornforth White", code:"No.228", hex:"#D2CCC1", rgb:"210,204,193"}
+];
+const tbody = document.getElementById("tbody");
+const theadRow = document.getElementById("theadRow");
+const toast = document.getElementById("toast");
+
+function showToast(text) {
+  toast.textContent = text;
+  toast.classList.add("show");
+  setTimeout(()=> toast.classList.remove("show"), 900);
+}
+
+function hexToRgbStr(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!m) return "";
+  return `${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)}`;
+}
+function rgbStrToHex(rgbStr) {
+  const parts = rgbStr.split(",").map(s=>parseInt(s.trim(),10));
+  if (parts.length!==3 || parts.some(n=>Number.isNaN(n) || n<0 || n>255)) return "";
+  const toHex = n => n.toString(16).padStart(2,"0");
+  return "#" + toHex(parts[0]) + toHex(parts[1]) + toHex(parts[2]);
+}
+
+function loadRows() {
+  try { const raw = localStorage.getItem(KEY_ROWS);
+    if (!raw) return defaultRows.slice();
+    const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : defaultRows.slice();
+  } catch { return defaultRows.slice(); }
+}
+function saveRows() {
+  const rows = [...tbody.querySelectorAll("tr")].map(tr => {
+    const get = sel => tr.querySelector(sel).value.trim();
+    return {
+      brand: get(".inp-brand"),
+      name:  get(".inp-name"),
+      code:  get(".inp-code"),
+      hex:   get(".inp-hex"),
+      rgb:   get(".inp-rgb")
+    };
+  });
+  localStorage.setItem(KEY_ROWS, JSON.stringify(rows));
+}
+
+function getColOrder() {
+  const defaultOrder = [...theadRow.children].map(th => th.dataset.col);
+  try {
+    const raw = localStorage.getItem(KEY_COLS);
+    if (!raw) return defaultOrder;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return defaultOrder;
+    // keep only known keys, in case of updates
+    const known = new Set(defaultOrder);
+    const filtered = parsed.filter(k => known.has(k));
+    // add any missing keys at the end
+    defaultOrder.forEach(k => { if (!filtered.includes(k)) filtered.push(k); });
+    return filtered;
+  } catch { return defaultOrder; }
+}
+function saveColOrder(order) {
+  localStorage.setItem(KEY_COLS, JSON.stringify(order));
+}
+
+/* build a row, with swatch next to name */
+function addRow(obj = {brand:"",name:"",code:"",hex:"",rgb:""}) {
+  const tr = document.createElement("tr");
+  tr.draggable = true;
+  tr.innerHTML = `
+    <td data-col="drag" class="row-tools"><span class="drag" title="Drag row">⋮⋮</span></td>
+    <td data-col="brand"><input class="inp-brand" type="text" placeholder="Brand" value="${obj.brand || ""}"></td>
+    <td data-col="nameBlock">
+      <div class="name-cell">
+        <div class="swatch" title="Tap to copy hex"></div>
+        <input class="inp-name" type="text" placeholder="Colour name" value="${obj.name || ""}">
+      </div>
+    </td>
+    <td data-col="hex"><input class="inp-hex hex" type="text" placeholder="#RRGGBB" value="${obj.hex || ""}"></td>
+    <td data-col="rgb">
+      <div style="display:flex; gap:6px; align-items:center;">
+        <input class="inp-rgb rgb" type="text" placeholder="R,G,B" value="${obj.rgb || ""}">
+        <button class="mini btnSync" title="Sync RGB and hex">↔</button>
+      </div>
+    </td>
+    <td data-col="actions">
+      <div class="row-actions">
+        <button class="mini btnDup" title="Duplicate">Copy</button>
+        <button class="mini btnDel" title="Delete">Delete</button>
+      </div>
+    </td>
+    <td data-col="code"><input class="inp-code" type="text" placeholder="Range, code" value="${obj.code || ""}"></td>
+  `;
+
+  // row drag
+  tr.addEventListener("dragstart", e => { tr.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; });
+  tr.addEventListener("dragend", () => { tr.classList.remove("dragging"); saveRows(); });
+
+  // inputs, sync and swatch
+  const sw = tr.querySelector(".swatch");
+  const setSwatch = () => {
+    const hex = tr.querySelector(".inp-hex").value.trim();
+    sw.style.background = hex ? hex : "repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 50% / 8px 8px";
+  };
+  ["input","change"].forEach(evt=>{
+    tr.querySelector(".inp-hex").addEventListener(evt, () => {
+      const hex = tr.querySelector(".inp-hex").value.trim();
+      if (hex.startsWith("#") && hex.length === 7) {
+        tr.querySelector(".inp-rgb").value = hexToRgbStr(hex);
+      }
+      setSwatch(); saveRows();
+    });
+    tr.querySelector(".inp-rgb").addEventListener(evt, () => {
+      const hex = rgbStrToHex(tr.querySelector(".inp-rgb").value.trim());
+      if (hex) tr.querySelector(".inp-hex").value = hex;
+      setSwatch(); saveRows();
+    });
+    tr.querySelector(".inp-brand").addEventListener(evt, saveRows);
+    tr.querySelector(".inp-name").addEventListener(evt, saveRows);
+    tr.querySelector(".inp-code").addEventListener(evt, saveRows);
+  });
+  tr.querySelector(".btnSync").addEventListener("click", () => {
+    const hex = tr.querySelector(".inp-hex").value.trim();
+    if (hex) tr.querySelector(".inp-rgb").value = hexToRgbStr(hex);
+    else {
+      const rgb = tr.querySelector(".inp-rgb").value.trim();
+      const h = rgbStrToHex(rgb);
+      if (h) tr.querySelector(".inp-hex").value = h;
+    }
+    setSwatch(); saveRows();
+  });
+  sw.addEventListener("click", async () => {
+    const hex = tr.querySelector(".inp-hex").value.trim(); if (!hex) return;
+    try { await navigator.clipboard.writeText(hex); showToast("Hex copied"); } catch { showToast("Copy failed"); }
+  });
+
+  tbody.appendChild(tr);
+  setSwatch();
+}
+
+/* row drag reordering */
+tbody.addEventListener("dragover", e => {
+  e.preventDefault();
+  const dragging = tbody.querySelector("tr.dragging");
+  if (!dragging) return;
+  const after = Array.from(tbody.querySelectorAll("tr:not(.dragging)"))
+    .find(row => e.clientY <= row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2);
+  if (after) tbody.insertBefore(dragging, after); else tbody.appendChild(dragging);
+});
+
+/* column drag reordering, persisted */
+function enableColumnDrag() {
+  let dragColKey = null;
+  theadRow.querySelectorAll("th").forEach(th => {
+    th.addEventListener("dragstart", () => {
+      dragColKey = th.dataset.col; th.classList.add("dragging");
+    });
+    th.addEventListener("dragend", () => th.classList.remove("dragging"));
+    th.addEventListener("dragover", e => e.preventDefault());
+    th.addEventListener("drop", e => {
+      e.preventDefault();
+      if (!dragColKey) return;
+      const targetKey = th.dataset.col;
+      if (targetKey === dragColKey) return;
+
+      const order = getColOrder();
+      const from = order.indexOf(dragColKey);
+      const to = order.indexOf(targetKey);
+      order.splice(to, 0, order.splice(from, 1)[0]);
+      applyColumnOrder(order);
+      saveColOrder(order);
+      dragColKey = null;
+    });
+  });
+}
+
+/* apply an order to thead and all tbody rows */
+function applyColumnOrder(order) {
+  // header
+  const ths = [...theadRow.children];
+  order.forEach(key => {
+    const th = ths.find(x => x.dataset.col === key);
+    if (th) theadRow.appendChild(th);
+  });
+  // body rows
+  tbody.querySelectorAll("tr").forEach(tr => {
+    const tds = [...tr.children];
+    order.forEach(key => {
+      const td = tds.find(x => x.dataset.col === key);
+      if (td) tr.appendChild(td);
+    });
+  });
+}
+
+/* build table */
+function rebuildFrom(data) {
+  tbody.innerHTML = "";
+  data.forEach(r => addRow(r));
+  applyColumnOrder(getColOrder());
+}
+
+/* controls */
+document.getElementById("addRowBtn").addEventListener("click", () => { addRow(); saveRows(); });
+document.getElementById("saveBtn").addEventListener("click", saveRows);
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (confirm("Reset table to defaults in this file, current list will be replaced")) {
+    localStorage.removeItem(KEY_ROWS);
+    localStorage.removeItem(KEY_COLS);
+    rebuildFrom(defaultRows);
+  }
+});
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([localStorage.getItem(KEY_ROWS) || "[]"], {type:"application/json"});
+  const url = URL.createObjectURL(blob); const a = document.createElement("a");
+  a.href = url; a.download = "paint-colours.json"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+document.getElementById("importFile").addEventListener("change", e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data)) throw 0;
+      localStorage.setItem(KEY_ROWS, JSON.stringify(data));
+      rebuildFrom(data);
+    } catch { alert("File did not look like a table JSON array"); }
+  };
+  reader.readAsText(file); e.target.value = "";
+});
+
+/* init */
+rebuildFrom(loadRows());
+enableColumnDrag();
+</script>
+</body>
+</html>
