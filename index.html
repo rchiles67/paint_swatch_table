@@ -81,41 +81,43 @@ const KEY_COLS = "paintTableColOrderV1";
 
 const defaultRows = [
   // Dulux Heritage Whites
-  {brand:"Dulux Heritage", name:"Indian White", code:"DHT018", hex:"#E8E8E5", rgb:"232,232,229"},
-  {brand:"Dulux Heritage", name:"Mallow White", code:"DHT085", hex:"#EAE8E5", rgb:"234,232,229"},
-  {brand:"Dulux Heritage", name:"Piano White", code:"DHT031", hex:"#F1EDE0", rgb:"241,237,224"},
-  {brand:"Dulux Heritage", name:"Marble White", code:"DHT086", hex:"#EAE9EA", rgb:"234,233,234"},
-  {brand:"Dulux Heritage", name:"Chalk White", code:"DHT004", hex:"#E6E9E9", rgb:"230,233,233"},
-  {brand:"Dulux Heritage", name:"Chiltern White", code:"40YY 73/028", hex:"#DFDCD5", rgb:"223,220,213"},
-  {brand:"Dulux Heritage", name:"Ochre White", code:"DHT025", hex:"#ECE6D8", rgb:"236,230,216"},
-  {brand:"Dulux Heritage", name:"Linen White", code:"DHT022", hex:"#EDE8E2", rgb:"237,232,226"},
-  {brand:"Dulux Heritage", name:"Romance White", code:"DHT089", hex:"#F1EEE7", rgb:"241,238,231"},
+  {brand:"Dulux Heritage", name:"Indian White",   code:"DHT018",     hex:"#E8E8E5", rgb:"232,232,229"},
+  {brand:"Dulux Heritage", name:"Mallow White",   code:"DHT085",     hex:"#EAE8E5", rgb:"234,232,229"},
+  {brand:"Dulux Heritage", name:"Piano White",    code:"DHT031",     hex:"#F1EDE0", rgb:"241,237,224"},
+  {brand:"Dulux Heritage", name:"Marble White",   code:"DHT086",     hex:"#EAE9EA", rgb:"234,233,234"},
+  {brand:"Dulux Heritage", name:"Chalk White",    code:"DHT004",     hex:"#E6E9E9", rgb:"230,233,233"},
+  {brand:"Dulux Heritage", name:"Chiltern White", code:"40YY 73/028",hex:"#DFDCD5", rgb:"223,220,213"},
+  {brand:"Dulux Heritage", name:"Ochre White",    code:"DHT025",     hex:"#ECE6D8", rgb:"236,230,216"},
+  {brand:"Dulux Heritage", name:"Linen White",    code:"DHT022",     hex:"#EDE8E2", rgb:"237,232,226"},
+  {brand:"Dulux Heritage", name:"Romance White",  code:"DHT089",     hex:"#F1EEE7", rgb:"241,238,231"},
 
   // Dulux Heritage Neutrals / Greys / Greens
-  {brand:"Dulux Heritage", name:"Stone Green", code:"DHT039", hex:"#B6B4A9", rgb:"182,180,169"},
-  {brand:"Dulux Heritage", name:"Pebble Grey", code:"1780009", hex:"#BAB3AC", rgb:"186,179,172"},
-  {brand:"Dulux Heritage", name:"Raw Cashmere", code:"40YY 60/103", hex:"#D4C9B5", rgb:"212,201,181"},
-  {brand:"Dulux Heritage", name:"Quartz Grey", code:"DHT046", hex:"#C2BEB4", rgb:"194,190,180"},
-  {brand:"Dulux Heritage", name:"Beachcomb Grey", code:"DHT062", hex:"#CFC8BD", rgb:"207,200,189"},
-  {brand:"Dulux Heritage", name:"Turtledove Grey", code:"DHT058", hex:"#D0C6B8", rgb:"208,198,184"},
+  {brand:"Dulux Heritage", name:"Stone Green",       code:"DHT039", hex:"#B6B4A9", rgb:"182,180,169"},
+  {brand:"Dulux Heritage", name:"Pebble Grey",       code:"1780009",hex:"#BAB3AC", rgb:"186,179,172"},
+  {brand:"Dulux Heritage", name:"Raw Cashmere",      code:"40YY 60/103", hex:"#D3CBB8", rgb:"211,203,184"},
+  {brand:"Dulux Heritage", name:"Pale Walnut",       code:"DHT027", hex:"#D4CABD", rgb:"212,202,189"},
+  {brand:"Dulux Heritage", name:"Quartz Grey",       code:"DHT034", hex:"#D5D0C7", rgb:"213,208,199"},
+  {brand:"Dulux Heritage", name:"Beachcomb Grey",    code:"DHT002", hex:"#C9CBC9", rgb:"201,203,201"},
+  {brand:"Dulux Heritage", name:"Turtledove Grey",   code:"DHT041", hex:"#DBDDDC", rgb:"219,221,220"},
 
   // Standard Dulux
-  {brand:"Dulux (Std)", name:"Whisper White", code:"SW1C2", hex:"#EBE9E0", rgb:"235,233,224"},
-  {brand:"Dulux (Std)", name:"Frosted Dawn", code:"", hex:"#F7F6EE", rgb:"247,246,238"},
-  {brand:"Dulux (Std)", name:"Egyptian Cotton", code:"", hex:"#D8D0C2", rgb:"216,208,194"},
+  {brand:"Dulux (Std)", name:"Whisper White",   code:"SW1C2", hex:"#EBE9E0", rgb:"235,233,224"},
+  {brand:"Dulux (Std)", name:"Frosted Dawn",    code:"",      hex:"#F7F6EE", rgb:"247,246,238"},
+  {brand:"Dulux (Std)", name:"Egyptian Cotton", code:"",      hex:"#D8D0C2", rgb:"216,208,194"},
 
   // Other brands
-  {brand:"Valspar", name:"Goose Feathers", code:"8006-2B", hex:"#D6D2CA", rgb:"214,210,202"},
-  {brand:"GoodHome, B&Q", name:"Cancún", code:"", hex:"#D8D2C4", rgb:"216,210,196"},
+  {brand:"Valspar",       name:"Goose Feathers", code:"8006-2B", hex:"#D6D2CA", rgb:"214,210,202"},
+  {brand:"GoodHome, B&Q", name:"Cancún",         code:"",        hex:"#D8D2C4", rgb:"216,210,196"}, // on-screen approx
 
   // Farrow & Ball
   {brand:"Farrow & Ball", name:"Elephant's Breath", code:"No.229", hex:"#CDC3B7", rgb:"205,195,183"},
-  {brand:"Farrow & Ball", name:"Skimming Stone", code:"No.241", hex:"#D4CEC3", rgb:"212,206,195"},
-  {brand:"Farrow & Ball", name:"Pavilion Grey", code:"No.242", hex:"#B9B8B0", rgb:"185,184,176"},
-  {brand:"Farrow & Ball", name:"Purbeck Stone", code:"No.275", hex:"#C1BEB4", rgb:"193,190,180"},
-  {brand:"Farrow & Ball", name:"Shaded White", code:"No.201", hex:"#DDD6C5", rgb:"221,214,197"},
-  {brand:"Farrow & Ball", name:"Cornforth White", code:"No.228", hex:"#D2CCC1", rgb:"210,204,193"}
+  {brand:"Farrow & Ball", name:"Skimming Stone",    code:"No.241", hex:"#D4CEC3", rgb:"212,206,195"},
+  {brand:"Farrow & Ball", name:"Pavilion Grey",     code:"No.242", hex:"#B9B8B0", rgb:"185,184,176"},
+  {brand:"Farrow & Ball", name:"Purbeck Stone",     code:"No.275", hex:"#C1BEB4", rgb:"193,190,180"},
+  {brand:"Farrow & Ball", name:"Shaded White",      code:"No.201", hex:"#DDD6C5", rgb:"221,214,197"},
+  {brand:"Farrow & Ball", name:"Cornforth White",   code:"No.228", hex:"#D2CCC1", rgb:"210,204,193"}
 ];
+
 const tbody = document.getElementById("tbody");
 const theadRow = document.getElementById("theadRow");
 const toast = document.getElementById("toast");
